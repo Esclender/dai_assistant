@@ -29,10 +29,6 @@ def cli():
     dai init --project-name my-api-project
 
     \b
-    # Define a new specialized agent
-    dai define-agent --name security-expert --role "Security Engineer"
-
-    \b
     # Run a project with custom agent team
     dai run --agents-config configs/my-team.yaml --project-name my-api-project
 
@@ -66,36 +62,6 @@ def init(project_name):
     # TODO: Implementation for project initialization
 
 @cli.command()
-@click.option("--name", "-n", required=True, 
-              help="Unique identifier for the agent (e.g., 'security-expert', 'architect')")
-@click.option("--role", "-r", required=True, 
-              help="Professional role of the agent (e.g., 'Security Engineer', 'System Architect')")
-@click.option("--backstory", "-b", 
-              help="Optional background story to give the agent more context and personality")
-@click.option("--output-format", "-o", 
-              help="Expected output format for the agent (e.g., 'json', 'yaml', 'markdown')")
-def define_agent(name, role, backstory, output_format):
-    """Define a new agent with specific role and characteristics.
-
-    Create a new agent definition with a unique identity, professional role,
-    and optional backstory. Agents can be customized for specific tasks.
-
-    Examples:
-
-    \b
-    # Define a security expert agent
-    dai define-agent -n security-expert -r "Security Engineer" \\
-                     -b "20 years of experience in cybersecurity"
-
-    \b
-    # Define an architect with specific output format
-    dai define-agent --name architect --role "System Architect" \\
-                     --output-format yaml
-    """
-    console.print(f"[bold green]Defining agent:[/bold green] {name} as {role}")
-    # TODO: Implementation for agent definition
-
-@cli.command()
 @click.option("--agents-config", "-a", required=True, 
               help="Path to YAML file containing agent configurations")
 @click.option("--project-name", "-p", required=True, 
@@ -120,28 +86,6 @@ def run(agents_config, project_name):
     console.print(f"[bold green]Running project:[/bold green] {project_name}")
     console.print(f"[bold blue]Using agents configuration:[/bold blue] {agents_config}")
     # TODO: Implementation for running the orchestration
-
-@cli.command()
-@click.option("--config-path", "-c", required=True, 
-              help="Path to YAML configuration file to load")
-def load_config(config_path):
-    """Load an existing configuration file.
-
-    Import a pre-existing agent team configuration or project settings.
-    Useful for reusing successful agent team compositions.
-
-    Examples:
-
-    \b
-    # Load a team configuration
-    dai load-config -c configs/successful-team.yaml
-
-    \b
-    # Load a specific project configuration
-    dai load-config --config-path configs/project-settings.yaml
-    """
-    console.print(f"[bold green]Loading configuration:[/bold green] {config_path}")
-    # TODO: Implementation for loading configuration
 
 @cli.command()
 @click.argument('topic', required=False)
@@ -200,7 +144,6 @@ def help(topic):
     ---------------
     1. Create and run a new project:
        dai init -p my-project
-       dai define-agent -n architect -r "System Architect"
        dai run -a configs/team.yaml -p my-project
 
     2. Load existing configuration:
@@ -310,6 +253,27 @@ def models(provider: str):
     except Exception as e:
         console.print(f"\n[red]Error:[/red] {str(e)}")
         raise
+
+@cli.command()
+@click.option('--config', '-c', default='agents_config.yaml', show_default=True, help='Path to the agents YAML config file.')
+def list_agents(config):
+    """List all available agents from the YAML config file."""
+    import yaml
+    try:
+        with open(config, 'r', encoding='utf-8') as f:
+            data = yaml.safe_load(f)
+        agents = data.get('agents', [])
+        if not agents:
+            console.print("[yellow]No agents found in the config file.[/yellow]")
+            return
+        console.print(f"[bold green]Agents in {config}:[/bold green]")
+        for agent in agents:
+            console.print(f"\n[bold]{agent.get('name', 'N/A')}[/bold] | Role: {agent.get('role', 'N/A')} | Model: {agent.get('model', 'N/A')}")
+            console.print(f"  [dim]Description:[/dim] {agent.get('description', '').strip()}")
+    except FileNotFoundError:
+        console.print(f"[red]Config file not found:[/red] {config}")
+    except Exception as e:
+        console.print(f"[red]Error loading agents:[/red] {str(e)}")
 
 if __name__ == "__main__":
     cli()
