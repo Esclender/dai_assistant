@@ -4,6 +4,11 @@ Entry point for command-line operations.
 """
 import click
 from rich.console import Console
+import asyncio
+from llm_connector.provider_factory import LLMProviderFactory
+from llm_connector.exceptions import LLMProviderError, UnsupportedModelError, InvalidProviderError
+from dotenv import load_dotenv
+load_dotenv()
 
 console = Console()
 
@@ -220,6 +225,91 @@ def help(topic):
     else:
         ctx = click.get_current_context()
         click.echo(ctx.parent.get_help())
+
+async def _send(provider: str, model: str, message: str):
+    """Async implementation of the send command."""
+    try:
+        # Create provider instance
+        provider_instance = LLMProviderFactory.create_provider(provider, model)
+        
+        # Send message
+        response = await provider_instance.send_message(message)
+        
+        console.print(f"\n[green]Success![/green] Message received by {provider} ({model})")
+        console.print(f"Response: {response['message']}")
+        
+    except UnsupportedModelError as e:
+        console.print(f"\n[red]Error:[/red] {str(e)}")
+        console.print("\n[bold]Tip:[/bold] Use 'dai models' to see available models")
+        raise
+    except InvalidProviderError as e:
+        console.print(f"\n[red]Error:[/red] {str(e)}")
+        console.print("\n[bold]Tip:[/bold] Use 'dai models' to see available providers")
+        raise
+    except Exception as e:
+        console.print(f"\n[red]Error:[/red] {str(e)}")
+        raise
+
+@cli.command()
+@click.option("--provider", "-p", type=click.Choice(['openai', 'anthropic']), required=True,
+              help="LLM provider to use (openai or anthropic)")
+@click.option("--model", "-m", required=True,
+              help="Model name to use (e.g., gpt-4, claude-3-7-sonnet)")
+@click.argument("message")
+def send(provider: str, model: str, message: str):
+    """Send a message to the selected LLM provider.
+
+    This command sends a message to the specified LLM provider and model.
+    Currently, it only confirms receipt of the message.
+
+    Examples:
+    
+    \b
+    # Send message to OpenAI's GPT-4
+    dai send --provider openai --model gpt-4 "Hello, how are you?"
+    
+    \b
+    # Send message to Anthropic's Claude 3.7
+    dai send --provider anthropic --model claude-3-7-sonnet "What's the weather like?"
+    """
+    asyncio.run(_send(provider, model, message))
+
+@cli.command()
+@click.option("--provider", "-p", type=click.Choice(['openai', 'anthropic']),
+              help="List models for a specific provider")
+def models(provider: str):
+    """List available models for LLM providers.
+
+    This command shows all available models for either a specific provider
+    or all providers if no provider is specified.
+
+    Examples:
+    
+    \b
+    # List all models for all providers
+    dai models
+    
+    \b
+    # List only OpenAI models
+    dai models --provider openai
+    """
+    try:
+        models = LLMProviderFactory.list_models(provider)
+        
+        if provider:
+            console.print(f"\n[green]Available models for {provider}:[/green]")
+            for model in models[provider]:
+                console.print(f"  - {model}")
+        else:
+            console.print("\n[green]Available models by provider:[/green]")
+            for provider_name, model_list in models.items():
+                console.print(f"\n[bold]{provider_name}[/bold] models:")
+                for model in model_list:
+                    console.print(f"  - {model}")
+        
+    except Exception as e:
+        console.print(f"\n[red]Error:[/red] {str(e)}")
+        raise
 
 if __name__ == "__main__":
     cli()
