@@ -275,5 +275,35 @@ def list_agents(config):
     except Exception as e:
         console.print(f"[red]Error loading agents:[/red] {str(e)}")
 
+@cli.command()
+@click.option('--config', '-c', default='agents_config.yaml', show_default=True, help='Path to the agents YAML config file.')
+def list_groups(config):
+    """List all groups and their member agents from the YAML config file."""
+    import yaml
+    try:
+        with open(config, 'r', encoding='utf-8') as f:
+            data = yaml.safe_load(f)
+        agents = {agent['name']: agent for agent in data.get('agents', [])}
+        groups = data.get('groups', [])
+        if not groups:
+            console.print("[yellow]No groups found in the config file.[/yellow]")
+            return
+        console.print(f"[bold green]Groups in {config}:[/bold green]")
+        for group in groups:
+            console.print(f"\n[bold]{group.get('name', 'N/A')}[/bold] ([dim]{group.get('description', '')}[/dim])")
+            members = group.get('members', [])
+            if not members:
+                console.print("  [yellow]No members in this group.[/yellow]")
+            for member in members:
+                agent = agents.get(member)
+                if agent:
+                    console.print(f"  - [bold]{agent['name']}[/bold] | Role: {agent['role']} | Model: {agent['model']}")
+                else:
+                    console.print(f"  - [red]{member} (not found in agents list)[/red]")
+    except FileNotFoundError:
+        console.print(f"[red]Config file not found:[/red] {config}")
+    except Exception as e:
+        console.print(f"[red]Error loading groups:[/red] {str(e)}")
+
 if __name__ == "__main__":
     cli()
