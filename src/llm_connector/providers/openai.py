@@ -2,12 +2,11 @@
 from typing import Dict, Any, Optional, List
 import asyncio
 from openai import AsyncOpenAI
-from openai.types.error import APIError as OpenAIError
+from openai import OpenAIError, AuthenticationError, RateLimitError
 
 from .base import LLMProvider, ProviderConfig, TokenUsage
 from ..exceptions import (
-    ConfigurationError, UnsupportedModelError, APIError,
-    AuthenticationError, RateLimitError
+    ConfigurationError, UnsupportedModelError, APIError
 )
 
 class OpenAIProvider(LLMProvider):
@@ -68,9 +67,9 @@ class OpenAIProvider(LLMProvider):
             }
 
         except OpenAIError as e:
-            if "rate limit" in str(e).lower():
+            if isinstance(e, RateLimitError):
                 raise RateLimitError(str(e))
-            elif "authentication" in str(e).lower():
+            elif isinstance(e, AuthenticationError):
                 raise AuthenticationError(str(e))
             else:
                 raise APIError(str(e), getattr(e, "status_code", None))

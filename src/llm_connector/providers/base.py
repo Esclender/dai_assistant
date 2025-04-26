@@ -73,18 +73,6 @@ class LLMProvider(ABC):
         pass
 
     @abstractmethod
-    def get_model_context_size(self, model: str) -> int:
-        """Get maximum context size for model.
-        
-        Args:
-            model: Model identifier
-            
-        Returns:
-            Maximum number of tokens
-        """
-        pass
-
-    @abstractmethod
     def validate_model(self, model: str) -> bool:
         """Validate if model is available.
         
