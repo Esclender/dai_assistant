@@ -1,0 +1,19 @@
+agents:
+  - name: agent-1
+    role: Developer
+    model: gpt-4
+    description: Writes backend code.
+
+  - name: agent-2
+    role: Reviewer
+    model: claude-3-7-sonnet
+    description: Reviews code.
+
+groups:
+  - name: backend-team
+    members: [agent-1, agent-2]
+    description: Team for backend development and review.
+
+  - name: qa-team
+    members: [agent-2]
+    description: Team for QA and review.
